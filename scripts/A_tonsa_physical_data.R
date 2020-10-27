@@ -94,7 +94,7 @@ Anova(temp.high.comp)
 
 Atonsa.temp.plot <- ggplot(data = tonsa.physical.data, aes(Date, Temperature, color = factor(Treatment)))+
   geom_point(size = 1)+
-  scale_y_continuous(name = "Temperature (°C)",
+  scale_y_continuous(name = "Temperature (Â°C)",
                      breaks = c(16,17,18,19,20,21,22,23), limits = c(16,23))+
   scale_x_date(date_labels = "%b/%Y")+
   scale_color_manual(name = NULL,
