@@ -2,6 +2,8 @@
 surv.directory <- "C:/Users/james/Documents/Grad_school/OA_Project/Survival/"
 fit.directory <- "C:/Users/james/Documents/Grad_school/OA_Project/Fitness/"
 epr.directory <- "C:/Users/james/Documents/Grad_school/OA_Project/EPR/"
+dev.directory <- "C:/Users/james/Documents/Grad_school/OA_Project/Development_time/"
+sex.directory <- "C:/Users/james/Documents/Grad_school/OA_Project/Sex_ratio/"
 
 library(popbio)
 library(dplyr)
@@ -21,6 +23,7 @@ library(mnormt)
 library(lavaan)
 library(semPlot)
 library(glmmTMB)
+library(ggpubr)
 
 
 #################################################################################################################################################
@@ -187,11 +190,6 @@ if (wd == "C:/Users/james/Documents/Grad_school/OA_Project/Survival/SurvDataFile
   
 }
 
-SurvTot.agg$Generation.c <- as.numeric(SurvTot.agg$Generation)
-
-SurvTot.agg$Generation <- as.factor(as.numeric(SurvTot.agg$Generation))
-
-SurvTot.agg$Treatment <- as.factor(as.numeric(SurvTot.agg$Treatment))
 
 
 SurvTot.agg <- unite(SurvTot.agg,
@@ -200,7 +198,7 @@ SurvTot.agg <- unite(SurvTot.agg,
                      remove = FALSE)
 
 SurvTot.mean <- SurvTot.agg %>%
-  group_by(Treatment, Generation.c) %>%
+  group_by(Treatment, Generation) %>%
   summarise(mean = mean(lx, na.rm = TRUE),
             sd = sd(lx, na.rm = TRUE),
             n.count = n()) %>%
@@ -208,32 +206,93 @@ SurvTot.mean <- SurvTot.agg %>%
          lower.ci = mean - qt(1 - (0.05 / 2), n.count-1)*se,
          upper.ci = mean + qt(1 - (0.05 / 2), n.count-1)*se)
 
+SurvTot.agg$Generation.c <- as.numeric(SurvTot.agg$Generation)
+SurvTot.agg$Generation <- as.factor(as.numeric(SurvTot.agg$Generation))
+SurvTot.agg$Treatment <- as.factor(as.numeric(SurvTot.agg$Treatment))
 
+SurvTot.mean$Generation.c <- as.numeric(SurvTot.mean$Generation)
+SurvTot.mean$Generation <- as.factor(as.numeric(SurvTot.mean$Generation))
 
 SurvTot.mean[is.na(SurvTot.mean)] <- 0
 
 survPlotTotal <- ggplot(data = SurvTot.mean, aes(Generation.c, mean, color=factor(Treatment)))+
   geom_line(size=1,
             position = position_dodge(width = 2))+
-  geom_point(size = 2, position = position_dodge(width = 2))+
+  geom_point(size = 1, position = position_dodge(width = 2))+
   geom_errorbar(aes(ymin=lower.ci, ymax=upper.ci), size=0.3, width = 0,
                 position = position_dodge(width = 2))+
   theme(legend.title = element_text(colour = "black", size=12))+
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
-  scale_color_manual(values = c("blue", "forestgreen", "orange", "red"))+
+  scale_color_manual(values = c("#0c7bdc", #AM
+                                "#009e73", #OA
+                                "#ffa500", #OW
+                                "#d55e00" #OWA
+                                )
+                     )+ 
   theme_classic()+
   labs(y="Survival", x="Generation")+
-  scale_x_continuous(breaks = c(0,2,4,11))+
-  #scale_y_continuous(breaks = waiver(), minor_breaks = waiver())+
+  scale_x_continuous(breaks = c(0,3,6,9,12,15,25))+
+  scale_y_continuous(limits = c(0,1),
+                     breaks = c(0,0.125,0.25,0.375,0.50,0.625,0.75,0.875,1.00))+
   theme(legend.position = "none",
-        axis.title.x = element_text(size = 20), 
-        axis.text.x = element_text(size = 20),
-        axis.title.y = element_text(size = 20),
-        axis.text.y = element_text(size = 20))
+        axis.title.x = element_text(size = 12), 
+        axis.text.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 12))+
+  geom_text(x=15.5, y=0.51, size = 5, label = "*", color = "black")+
+  geom_text(x=16, y=0.6, size = 5, label = "*", color = "black")+
+  geom_text(x=26, y=0.3, size = 5, label = "*", color = "black")
 
 survPlotTotal
 
+ggsave(filename = paste0(surv.directory,"Survival_plot.pdf"), plot = survPlotTotal, height = 101, width = 180, units = "mm")
 
+
+### Boxplot for supplementary information
+SurvTot.agg$Generation <- factor(SurvTot.agg$Generation, levels = c("0","3","6", "9","12","15","25"), ordered = T, 
+                                 labels = c("0","3","6", "9","12","15","25"))
+SurvTot.mean$Generation <- factor(SurvTot.mean$Generation, levels = c("0","3","6", "9","12","15","25"), ordered = T, 
+                                  labels = c("0","3","6", "9","12","15","25"))
+
+survBoxplot <- ggplot()+
+  geom_boxplot(data = SurvTot.agg, aes(x = Generation, y = lx, fill = factor(Treatment)), lwd = 1.1,
+               alpha = 0.3,
+               outlier.size = 1.5)+ # can't make a continuous x axis with boxplots
+  
+  geom_point(data = SurvTot.mean, aes(Generation, mean, color=factor(Treatment)),
+             size = 3, 
+             shape = 18,
+             position = position_dodge(width = 0.75)
+  ) +
+  
+  
+  
+  theme(legend.title = element_text(colour = "black", size=12))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  scale_fill_manual(values = c("#0c7bdc", #AM
+                                "#009e73", #OA
+                                "#ffa500", #OW
+                                "#d55e00" #OWA
+  ))+
+  scale_color_manual(values = c("#0c7bdc", #AM
+                                "#009e73", #OA
+                                "#ffa500", #OW
+                                "#d55e00" #OWA
+  )
+  )+
+  theme_classic()+
+  labs(y="Survival", x="Generation")+
+  scale_x_discrete(breaks = c(0,3,6,9,12,15,25))+
+  scale_y_continuous(limits = c(0,1))+
+  theme(legend.position = "none", 
+        axis.title.x = element_text(size = 12), 
+        axis.text.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 12))
+
+
+survBoxplot
+
+ggsave(filename = paste0(surv.directory,"Surv_boxplot.pdf"), plot = survBoxplot, height = 101, width = 180, units = "mm")
 
 ## Create dataframes for fitness landscapes
 
@@ -350,25 +409,78 @@ Cdev.sum$Generation.c <- as.numeric(Cdev.sum$Generation)
 CdevPlotTotal <- ggplot(data = Cdev.sum, aes(Generation.c, mean, color=factor(Treatment)))+
   geom_line(size=1,
             position = position_dodge(width = 2))+
-  geom_point(size = 2, position = position_dodge(width = 2))+
+  geom_point(size = 1, position = position_dodge(width = 2))+
   geom_errorbar(aes(ymin=lower.ci, ymax=upper.ci), size=0.3, width=0, position = position_dodge(width = 2))+
   theme(legend.title = element_text(colour = "black", size=12))+
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
-  scale_color_manual(values = c("blue", "forestgreen", "orange", "red"))+
+  scale_color_manual(values = c("#0c7bdc", #AM
+                                "#009e73", #OA
+                                "#ffa500", #OW
+                                "#d55e00" #OWA
+  )
+  )+ 
   theme_classic()+
   labs(y="Total Development Time (days)", x="Generation")+
   scale_x_continuous(breaks = c(0,3,6,9,12,15,25))+
-  scale_y_continuous(breaks = waiver(), minor_breaks = waiver())+
+  scale_y_continuous(breaks = c(10,10.5,11,11.5,12,12.5,13,13.5,14,14.5,15))+
   theme(legend.position = "none",
-        axis.title.x = element_text(size = 20), 
-        axis.text.x = element_text(size = 20),
-        axis.title.y = element_text(size = 20),
-        axis.text.y = element_text(size = 20))
+        axis.title.x = element_text(size = 12), 
+        axis.text.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 12))
 
 CdevPlotTotal
 
 
+ggsave(filename = paste0(dev.directory,"Dev_plot.pdf"), plot = CdevPlotTotal, height = 101, width = 180, units = "mm")
 
+Cdev.sum$Generation <- factor(Cdev.sum$Generation, levels = c("0","3","6", "9","12","15","25"), ordered = T)
+SurvTot.Cdev$Generation <- factor(SurvTot.Cdev$Generation, levels = c("0","3","6", "9","12","15","25"), ordered = T)
+
+CdevBoxplot <- ggplot()+
+  geom_boxplot(data = SurvTot.Cdev, aes(x = Generation, y = time, fill = factor(Treatment)), lwd = 1.1,
+               alpha = 0.3,
+               outlier.size = 1.5)+ # can't make a continuous x axis with boxplots
+  
+  geom_point(data = Cdev.sum, aes(Generation, mean, color=factor(Treatment)),
+             size = 3, 
+             shape = 18,
+             position = position_dodge(width = 0.75)
+  ) +
+  
+  #geom_errorbar(data = SurvTot.mean, aes(ymin=lower.ci, ymax=upper.ci), size=0.3, width = 0,
+  #             position = position_dodge(width = 2))+
+  
+  theme(legend.title = element_text(colour = "black", size=12))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  scale_fill_manual(values = c("#0c7bdc", #AM
+                               "#009e73", #OA
+                               "#ffa500", #OW
+                               "#d55e00" #OWA
+  ))+
+  scale_color_manual(values = c("#0c7bdc", #AM
+                                "#009e73", #OA
+                                "#ffa500", #OW
+                                "#d55e00" #OWA
+  )
+  )+
+  theme_classic()+
+  labs(y="Total Development time (days)", x="Generation")+
+  scale_x_discrete(breaks = c(0,3,6,9,12,15,25))+
+  #scale_y_continuous(limits = c(0,1))+
+  theme(legend.position = "none", 
+        axis.title.x = element_text(size = 12), 
+        axis.text.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 12))
+
+
+CdevBoxplot
+
+ggsave(filename = paste0(dev.directory,"Cdev_boxplot.pdf"), plot = survBoxplot, height = 101, width = 180, units = "mm")
+
+Cdev.plot.complete <- ggarrange(CdevPlotTotal, CdevBoxplot, ncol = 1, nrow = 2)
+
+ggsave(filename = paste0(dev.directory, "Cdev_plots_complete.pdf"), plot = Cdev.plot.complete, height = 202, width = 180, units = "mm")
 
 
 SurvTot.Cdev$Generation.c <- as.numeric(SurvTot.Cdev$Generation)
@@ -472,19 +584,14 @@ SurvTotSex <- SurvTot %>%
   summarise(F.Ratio = last(F.Ratio))
 
 SurvTotSex$Generation.c <- as.numeric(SurvTotSex$Generation)
-
 SurvTotSex$Generation <- as.factor(as.numeric(SurvTotSex$Generation))
 
-
-
-
-gam.sexratio <- gam(F.Ratio ~ s(Generation.c, by = factor(Treatment), k = 3), data = SurvTotSex)
+gam.sexratio <- gam(F.Ratio ~ s(Generation.c, by = Treatment, k = 3), data = SurvTotSex)
 summary(gam.sexratio)
 
 
 plot(gam.sexratio, pages = 1)
-plot_smooth(gam.sexratio, view="Generation.c", plot_all="Treatment", rug=FALSE)
-#plot_smooth(gam1, view="Generation.c", plot_all="Beak", rug=FALSE)
+plot_smooth(gam.sexratio, view="Generation.c", plot_all="Treatment", rug=FALSE) ## SAVE THIS FIGURE AS 6 X 4.5 INCHES IN PORTRAIT MODE
 gam.stats.sexratio <- summary(gam.sexratio)
 
 gam.stats.sexratio
@@ -515,6 +622,38 @@ pairs(sexratio.emm)
 
 
 
+survPlotSex <- ggplot(data = SurvTotSex, aes(x = Generation.c,
+                              y = F.Ratio/0.5,
+                              color = factor(Treatment)))+
+  
+  geom_point() + 
+  
+  geom_smooth(method = "lm", se = F) +
+  
+  theme(legend.title = element_text(colour = "black", size=12))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  scale_color_manual(values = c("#0c7bdc", #AM
+                                "#009e73", #OA
+                                "#ffa500", #OW
+                                "#d55e00" #OWA
+  )
+  )+
+  theme_classic()+
+  labs(y="Female:Male", x="Generation")+
+  scale_x_continuous(breaks = c(0,3,6,9,12,15,25))+
+  
+  theme(legend.position = "none",
+        axis.title.x = element_text(size = 12), 
+        axis.text.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 12))
+
+survPlotSex
+
+ggsave(filename = paste0(sex.directory,"Sex_ratio_plot.pdf"), plot = survPlotSex, height = 112, width = 180, units = "mm")
+
+
+
 ######################################################################################################################################
 #################################################################################################################################################
 #################################################################################################################################################
@@ -526,15 +665,9 @@ pairs(sexratio.emm)
 EPRtot <- fread(paste(epr.directory,"Data_frames/EPR_HF_data_total.txt", sep = ""))
 
 
-#remove the last row because it adds an extra row in the summary of NaNs
-last.row <- nrow(EPRtot)
-EPRtot <- EPRtot[-last.row,]
-
-
 #create linear models that are tested against each other grouped by generation and analyzes EPR/HF by temp, pH, and temp*pH
 EPRtot <- EPRtot[!is.na(EPRtot),]
 EPRtot <- EPRtot[!is.na(HFtot),]
-EPRtot$Generation[EPRtot$Generation==10] <-9
 
 
 #EPRtot <- na.omit(EPRtot)
@@ -544,20 +677,417 @@ EPRtot$Treatment <- as.factor(EPRtot$Treatment)
 
 
 EPRtot <- unite(EPRtot,
-                Treat.Rep,
-                c(Treatment, Rep),
-                remove = FALSE)
-
-EPRtot <- unite(EPRtot,
                 Gen.treat,
                 c(Generation, Treatment),
                 remove = FALSE)
 
 
-# remove for where there is no data
-EPRtot <- subset(EPRtot, Gen.treat != "9_HA")
+EPRtot <- subset(EPRtot, Gen.treat != "10_HA")
+
+
+if (EPRtot$pH == 8.13) {
+  
+  EPRtot$pH[EPRtot$pH == '8.13'] <- 8.20
+  
+}
+
+
+eprStatsAll <- EPRtot %>% 
+  group_by(Treatment, Generation.c) %>% 
+  summarise(Rate = mean(EPRtot, na.rm = TRUE),
+            sd = sd(EPRtot, na.rm = TRUE),
+            n.count = n()) %>% 
+  mutate(se = sd/sqrt(n.count),
+         lower.ci = Rate - qt(1 - (0.05 / 2), n.count-1)*se,
+         upper.ci = Rate + qt(1 - (0.05 / 2), n.count-1)*se)
+
+
+hfStatsAll <- EPRtot %>% 
+  group_by(Treatment, Generation.c) %>% 
+  summarise(HF = mean(HFtot, na.rm = TRUE),
+            sd = sd(HFtot, na.rm = TRUE),
+            n.count = n()) %>% 
+  mutate(se = sd/sqrt(n.count),
+         lower.ci = HF - qt(1 - (0.05 / 2), n.count-1)*se,
+         upper.ci = HF + qt(1 - (0.05 / 2), n.count-1)*se)
+
+
+
+
+###combine all plots with HF on the same plot
+
+colnames(hfStatsAll) <- c("Treatment2", "Generation2", "HF", "sd2", "n.count2", "se2", "lower.ci2", "upper.ci2")
+
+eprSumComplete <- cbind(eprStatsAll, hfStatsAll)
+eprSumComplete$Treatment <- as.factor(eprSumComplete$Treatment)
+
+
+## have to make the HF values on the same scale as EPR values
+eprSumComplete$HF <- eprSumComplete$HF*max(eprSumComplete$Rate)
+eprSumComplete$lower.ci2 <- eprSumComplete$lower.ci2*max(eprSumComplete$Rate)
+eprSumComplete$upper.ci2 <- eprSumComplete$upper.ci2*max(eprSumComplete$Rate)
+
+#eprSumComplete$Treatment[eprSumComplete$Treatment=="AA"] <- expression("Control")
+
+eprSumComplete$Rate[eprSumComplete$Rate==0] <- NA
+eprSumComplete$HF[eprSumComplete$HF==0] <- NA
+
+eprSumComplete <- eprSumComplete[complete.cases(eprSumComplete),]
+
+eprSumAA <- subset(eprSumComplete, Treatment == "AA")
+eprSumAH <- subset(eprSumComplete, Treatment == "AH")
+eprSumHA <- subset(eprSumComplete, Treatment == "HA")
+eprSumHH <- subset(eprSumComplete, Treatment == "HH")
+
+
+#### separate bar graphs for each treatment
+
+## AA
+epr.bar.graphs.AA <- ggplot(data = eprSumAA, aes(Generation.c, Rate))+
+  geom_bar(stat = "identity", 
+           position = position_dodge(), 
+           size =4,
+           width = 1.8,
+           fill = "#0c7bdc")+
+  geom_errorbar(aes(ymin=lower.ci, 
+                    ymax=upper.ci), 
+                size=1.3, 
+                width=1.8,
+                position = position_dodge())+
+  theme_classic()+
+  labs(y=expression(Egg~Production~Rate~(female^-1~day^-1)), 
+       x="Generation")+
+  geom_line(aes(y=HF), 
+            size=1.3,
+            colour="purple")+
+  geom_errorbar(aes(ymin=lower.ci2, ymax=upper.ci2), 
+                size=1.3,
+                width = 1.8,
+                position = position_dodge(0.3),
+                colour = "purple")+
+  scale_x_continuous(breaks = c(0,3,6,9,12,15,25))+
+  scale_y_continuous(limits = c(0,49), breaks = c(0,5,10,15,20,25,30,35,40),
+                     sec.axis = sec_axis(~./max(eprStatsAll$Rate),
+                                         name = "Hatching Success",
+                                         breaks = c(0.00,0.125,0.25,0.375,0.5,0.625,0.75,0.875,1)))+
+  theme(legend.position = "none", 
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.title.x = element_text(size = 12), 
+        axis.text.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 12))+
+  
+  # statistical groups for EPR
+  geom_text(x=0,y=2,label = "c", colour = "white", size = 12)+
+  geom_text(x=3,y=2,label = "a", colour = "white", size = 12)+
+  geom_text(x=6,y=2,label = "a", colour = "white", size = 12)+
+  geom_text(x=10,y=2,label = "a", colour = "white", size = 12)+
+  geom_text(x=12,y=2,label = "a", colour = "white", size = 12)+
+  geom_text(x=15,y=2,label = "a", colour = "white", size = 12)+
+  geom_text(x=25,y=2,label = "b", colour = "white", size = 12)+
+  
+  # statistical groups for HS
+  geom_text(x=0.5,y=43,label = "b", colour = "purple", size = 12)+
+  geom_text(x=3,y=42.5,label = "ab", colour = "purple", size = 12)+
+  geom_text(x=6,y=36,label = "a", colour = "purple", size = 12)+
+  geom_text(x=10,y=38,label = "ab", colour = "purple", size = 12)+
+  geom_text(x=12,y=40.5,label = "ab", colour = "purple", size = 12)+
+  geom_text(x=15,y=40.5,label = "ab", colour = "purple", size = 12)+
+  geom_text(x=25,y=41,label = "ab", colour = "purple", size = 12)
+
+
+epr.bar.graphs.AA
+
+## AH
+epr.bar.graphs.AH <- ggplot(data = eprSumAH, aes(Generation.c, Rate))+
+  geom_bar(stat = "identity", 
+           position = position_dodge(), 
+           size =4,
+           width = 1.8,
+           fill = "#009e73")+
+  geom_errorbar(aes(ymin=lower.ci, 
+                    ymax=upper.ci), 
+                size=1.3, 
+                width=1.8,
+                position = position_dodge())+
+  theme_classic()+
+  labs(y=expression(Egg~Production~Rate~(female^-1~day^-1)), 
+       x="Generation")+
+  geom_line(aes(y=HF), 
+            size=1.3,
+            colour="purple")+
+  geom_errorbar(aes(ymin=lower.ci2, ymax=upper.ci2), 
+                size=1.3,
+                width = 1.8,
+                position = position_dodge(0.3),
+                colour = "purple")+
+  scale_x_continuous(breaks = c(0,3,6,9,12,15,25))+
+  scale_y_continuous(limits = c(0,45), breaks = c(0,5,10,15,20,25,30,35,40),
+                     sec.axis = sec_axis(~./max(eprStatsAll$Rate),
+                                         name = "Hatching Success",
+                                         breaks = c(0.00,0.125,0.25,0.375,0.5,0.625,0.75,0.875,1)))+
+  theme(legend.position = "none", 
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.title.x = element_text(size = 12), 
+        axis.text.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 12))+
+  
+  # statistical groups for EPR
+  geom_text(x=0,y=2,label = "c", colour = "white", size = 12)+
+  geom_text(x=3,y=2,label = "bc", colour = "white", size = 12)+
+  geom_text(x=6,y=2,label = "ab", colour = "white", size = 12)+
+  geom_text(x=10,y=2,label = "a", colour = "white", size = 12)+
+  geom_text(x=12,y=2,label = "ab", colour = "white", size = 12)+
+  geom_text(x=15,y=2,label = "a", colour = "white", size = 12)+
+  geom_text(x=25,y=2,label = "bc", colour = "white", size = 12)+
+  
+  # statistical groups for HS
+  geom_text(x=0,y=41,label = "ab", colour = "purple", size = 12)+
+  geom_text(x=3,y=37.5,label = "ab", colour = "purple", size = 12)+
+  geom_text(x=6,y=34,label = "a", colour = "purple", size = 12)+
+  geom_text(x=10,y=39,label = "ab", colour = "purple", size = 12)+
+  geom_text(x=12,y=37,label = "ab", colour = "purple", size = 12)+
+  geom_text(x=15,y=35.5,label = "ab", colour = "purple", size = 12)+
+  geom_text(x=25,y=41,label = "b", colour = "purple", size = 12)
+
+
+epr.bar.graphs.AH
+
+
+## HA
+epr.bar.graphs.HA <- ggplot(data = eprSumHA, aes(Generation.c, Rate))+
+  geom_bar(stat = "identity", 
+           position = position_dodge(), 
+           size =4,
+           width = 1.8,
+           fill = "#ffa500")+
+  geom_errorbar(aes(ymin=lower.ci, 
+                    ymax=upper.ci), 
+                size=1.3, 
+                width=1.8,
+                position = position_dodge())+
+  theme_classic()+
+  labs(y=expression(Egg~Production~Rate~(female^-1~day^-1)), 
+       x="Generation")+
+  geom_line(aes(y=HF), 
+            size=1.3,
+            colour="purple")+
+  geom_errorbar(aes(ymin=lower.ci2, ymax=upper.ci2), 
+                size=1.3,
+                width = 1.8,
+                position = position_dodge(0.3),
+                colour = "purple")+
+  scale_x_continuous(breaks = c(0,3,6,9,12,15,25))+
+  scale_y_continuous(limits = c(0,45), breaks = c(0,5,10,15,20,25,30,35,40),
+                     sec.axis = sec_axis(~./max(eprStatsAll$Rate),
+                                         name = "Hatching Success",
+                                         breaks = c(0.00,0.125,0.25,0.375,0.5,0.625,0.75,0.875,1)))+
+  theme(legend.position = "none", 
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.title.x = element_text(size = 12), 
+        axis.text.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 12))+
+  
+  # statistical groups for EPR
+  geom_text(x=0,y=2,label = "ab", colour = "black", size = 12)+
+  geom_text(x=3,y=2,label = "b", colour = "black", size = 12)+
+  geom_text(x=6,y=2,label = "b", colour = "black", size = 12)+
+  #geom_text(x=9,y=1.7,label = "ab", colour = "white", size = 12)+
+  geom_text(x=12,y=2,label = "ab", colour = "black", size = 12)+
+  geom_text(x=15,y=2,label = "a", colour = "black", size = 12)+
+  geom_text(x=25,y=2,label = "a", colour = "black", size = 12)+
+  
+  # statistical groups for HS
+  geom_text(x=0,y=38,label = "a", colour = "purple", size = 12)+
+  geom_text(x=3,y=42,label = "ab", colour = "purple", size = 12)+
+  geom_text(x=6,y=42,label = "ab", colour = "purple", size = 12)+
+  #geom_text(x=9,y=42,label = "ab", colour = "purple", size = 12)+
+  geom_text(x=12,y=39,label = "ab", colour = "purple", size = 12)+
+  geom_text(x=15,y=43,label = "ab", colour = "purple", size = 12)+
+  geom_text(x=25,y=44,label = "b", colour = "purple", size = 12)
+
+
+epr.bar.graphs.HA
+
+## HH
+epr.bar.graphs.HH <- ggplot(data = eprSumHH, aes(Generation.c, Rate))+
+  geom_bar(stat = "identity", 
+           position = position_dodge(), 
+           size =4,
+           width = 1.8,
+           fill = "#d55e00")+
+  geom_errorbar(aes(ymin=lower.ci, 
+                    ymax=upper.ci), 
+                size=1.3, 
+                width=1.8,
+                position = position_dodge())+
+  theme_classic()+
+  labs(y=expression(Egg~Production~Rate~(female^-1~day^-1)), 
+       x="Generation")+
+  geom_line(aes(y=HF), 
+            size=1.3,
+            colour="purple")+
+  geom_errorbar(aes(ymin=lower.ci2, ymax=upper.ci2), 
+                size=1.3,
+                width = 1.8,
+                position = position_dodge(0.3),
+                colour = "purple")+
+  scale_x_continuous(breaks = c(0,3,6,9,12,15,25))+
+  scale_y_continuous(limits = c(0,45), breaks = c(0,5,10,15,20,25,30,35,40),
+                     sec.axis = sec_axis(~./max(eprStatsAll$Rate),
+                                         name = "Hatching Success",
+                                         breaks = c(0.00,0.125,0.25,0.375,0.5,0.625,0.75,0.875,1)))+
+  theme(legend.position = "none", 
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.title.x = element_text(size = 12), 
+        axis.text.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 12))+
+  
+  # statistical groups for EPR
+  geom_text(x=0,y=2,label = "a", colour = "white", size = 12)+
+  geom_text(x=3,y=2,label = "b", colour = "white", size = 12)+
+  geom_text(x=6,y=2,label = "ab", colour = "white", size = 12)+
+  geom_text(x=9,y=2,label = "b", colour = "white", size = 12)+
+  geom_text(x=12,y=2,label = "b", colour = "white", size = 12)+
+  geom_text(x=15,y=2,label = "b", colour = "white", size = 12)+
+  geom_text(x=25,y=2,label = "ab", colour = "white", size = 12)+
+  
+  # statistical groups for HS
+  geom_text(x=0,y=25,label = "a", colour = "purple", size = 12)+
+  geom_text(x=3,y=43,label = "b", colour = "purple", size = 12)+
+  geom_text(x=6,y=40,label = "b", colour = "purple", size = 12)+
+  geom_text(x=9,y=42.5,label = "b", colour = "purple", size = 12)+
+  geom_text(x=12,y=42.5,label = "b", colour = "purple", size = 12)+
+  geom_text(x=15,y=42.5,label = "b", colour = "purple", size = 12)+
+  geom_text(x=25,y=43.3,label = "b", colour = "purple", size = 12)
+
+
+epr.bar.graphs.HH
+
+
+
+
+epr.plot.complete <- ggarrange(epr.bar.graphs.AA+rremove("x.title"), epr.bar.graphs.AH+rremove("x.title"),
+                               epr.bar.graphs.HA,epr.bar.graphs.HH,
+                               ncol = 2, nrow = 2)
+
+epr.plot.complete
+
+ggsave(filename = paste0(epr.directory,"EPR_HS_plot_total.pdf"), plot = epr.plot.complete, height = 210, width = 180, units = "mm")
+
+## EPR and HS boxplots for supplemental material
+eprStatsAll$Generation <- as.factor(as.numeric(eprStatsAll$Generation.c))
+eprStatsAll$Rate[eprStatsAll$Rate==0] <- NA
+eprStatsAll <- eprStatsAll[complete.cases(eprStatsAll),]
+
+eprboxplot <- ggplot(data = EPRtot, aes(x = Generation))+
+  geom_boxplot(lwd = 1.1, aes(y = EPRtot, fill = factor(Treatment)),
+               alpha = 0.3,
+               outlier.size = 1.5)+ # can't make a continuous x axis with boxplots
+  
+  geom_point(data = eprStatsAll, aes(Generation, Rate, color=factor(Treatment)),
+             size = 3, 
+             shape = 18,
+             position = position_dodge(width = 0.75)
+  ) +
+  
+  
+  scale_fill_manual(values = c("#0c7bdc", #AM
+                               "#009e73", #OA
+                               "#ffa500", #OW
+                               "#d55e00" #OWA
+  )
+  )+
+  scale_color_manual(values = c("#0c7bdc", #AM
+                                "#009e73", #OA
+                                "#ffa500", #OW
+                                "#d55e00" #OWA
+  )
+  )+
+  theme_classic()+
+  labs(y=expression(atop(Egg~Production~Rate,(female^-1~day^-1))), x="Generation")+
+  scale_x_discrete(breaks = c(0,3,6,9,10,12,15,25))+
+  scale_y_continuous(breaks = waiver(), minor_breaks = waiver())+
+  #ylim(1.402, 1.405)+
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = "none", 
+        axis.title.x = element_text(size = 12), 
+        axis.text.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 12))
+
+
+eprboxplot
+
+hfStatsAll$Generation <- as.factor(as.numeric(hfStatsAll$Generation2))
+
+hfStatsAll$HF[hfStatsAll$HF==0] <- NA
+hfStatsAll <- hfStatsAll[complete.cases(hfStatsAll),]
+
+hfboxplot <- ggplot(data = EPRtot, aes(x = Generation))+
+  geom_boxplot(lwd = 1.1, aes(y = HFtot, fill = factor(Treatment)),
+               alpha = 0.3,
+               outlier.size = 1.5)+ # can't make a continuous x axis with boxplots
+  
+  geom_point(data = hfStatsAll, aes(Generation, HF, color=factor(Treatment2)),
+             size = 3, 
+             shape = 18,
+             position = position_dodge(width = 0.75)
+  ) +
+  
+  
+  scale_fill_manual(values = c("#0c7bdc", #AM
+                               "#009e73", #OA
+                               "#ffa500", #OW
+                               "#d55e00" #OWA
+  )
+  )+
+  scale_color_manual(values = c("#0c7bdc", #AM
+                                "#009e73", #OA
+                                "#ffa500", #OW
+                                "#d55e00" #OWA
+  )
+  )+
+  theme_classic()+
+  labs(y="Hatching Frequency", x="Generation")+
+  scale_x_discrete(breaks = c(0,3,6,9,10,12,15,25))+
+  scale_y_continuous(breaks = waiver(), minor_breaks = waiver())+
+  theme(legend.position = "none", 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.title.x = element_text(size = 12), 
+        axis.text.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 12))
+
+
+hfboxplot
+
+epr.hf.boxplots <- ggarrange(eprboxplot, hfboxplot, ncol = 1)
+
+ggsave(filename = paste0(epr.directory,"EPR_HF_boxplots.pdf"), plot = epr.hf.boxplots, height = 210, width = 180, units = "mm")
+
 
 ##### Statistics for EPR data #####
+
+# remove for where there is no data
+EPRtot$Generation[EPRtot$Generation==10] <-9
+
+
+EPRtot <- unite(EPRtot,
+                Treat.Rep,
+                c(Treatment, Rep),
+                remove = FALSE)
+
+
 ## create gam models to test if epr and hf change across generations
 
 # s() indicates a smooth function
@@ -641,297 +1171,6 @@ fwrite(hf.tukey.groups, file = paste(epr.directory,"Statistics/HF_tukey_groups.t
 
 
 
-
-
-
-if (EPRtot$pH == 8.13) {
-  
-  EPRtot$pH[EPRtot$pH == '8.13'] <- 8.20
-  
-}
-
-
-eprStatsAll <- EPRtot %>% 
-  group_by(Treatment, Generation) %>% 
-  summarise(Rate = mean(EPRtot, na.rm = TRUE),
-            sd = sd(EPRtot, na.rm = TRUE),
-            n.count = n()) %>% 
-  mutate(se = sd/sqrt(n.count),
-         lower.ci = Rate - qt(1 - (0.05 / 2), n.count-1)*se,
-         upper.ci = Rate + qt(1 - (0.05 / 2), n.count-1)*se)
-
-
-hfStatsAll <- EPRtot %>% 
-  group_by(Treatment, Generation) %>% 
-  summarise(HF = mean(Hftot, na.rm = TRUE),
-            sd = sd(Hftot, na.rm = TRUE),
-            n.count = n()) %>% 
-  mutate(se = sd/sqrt(n.count),
-         lower.ci = HF - qt(1 - (0.05 / 2), n.count-1)*se,
-         upper.ci = HF + qt(1 - (0.05 / 2), n.count-1)*se)
-
-eprStatsAll <- eprStatsAll[-1,]
-hfStatsAll <- hfStatsAll[-1,]
-
-
-###combine all plots with HF on the same plot
-
-colnames(hfStatsAll) <- c("Treatment2", "Generation2", "HF", "sd2", "n.count2", "se2", "lower.ci2", "upper.ci2")
-
-
-
-
-
-eprSumComplete <- cbind(eprStatsAll, hfStatsAll)
-eprSumComplete$Treatment <- as.factor(eprSumComplete$Treatment)
-
-
-## have to make the HF values on the same scale as EPR values
-eprSumComplete$HF <- eprSumComplete$HF*max(eprSumComplete$Rate)
-eprSumComplete$lower.ci2 <- eprSumComplete$lower.ci2*max(eprSumComplete$Rate)
-eprSumComplete$upper.ci2 <- eprSumComplete$upper.ci2*max(eprSumComplete$Rate)
-
-#eprSumComplete$Treatment[eprSumComplete$Treatment=="AA"] <- expression("Control")
-
-eprSumComplete$Rate[eprSumComplete$Rate==0] <- NA
-eprSumComplete$HF[eprSumComplete$HF==0] <- NA
-
-eprSumComplete <- eprSumComplete[complete.cases(eprSumComplete),]
-
-eprSumAA <- subset(eprSumComplete, Treatment == "AA")
-eprSumAH <- subset(eprSumComplete, Treatment == "AH")
-eprSumHA <- subset(eprSumComplete, Treatment == "HA")
-eprSumHH <- subset(eprSumComplete, Treatment == "HH")
-
-epr.bar.graphs <- ggplot(data = eprSumComplete, aes(Generation, Rate, fill = factor(Treatment)))+
-  geom_bar(stat = "identity", 
-           position = position_dodge(), 
-           size =4,
-           width = 1.8)+
-  geom_errorbar(aes(ymin=lower.ci, 
-                    ymax=upper.ci), 
-                size=1.3,
-                width = 1.0, 
-                position = position_dodge())+
-  theme(legend.title = element_text(colour = "black", size=12))+
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank())+
-  scale_fill_manual(values = c("blue", "forestgreen", "orange", "red"))+
-  theme_classic()+
-  labs(y=expression(Egg~Production~Rate~(female^-1~day^-1)), 
-       x="Generation")+
-  scale_x_continuous(breaks = c(0,2,4,11))+
-  geom_line(aes(y=HF), 
-            size=1.3,
-            colour="purple")+
-  geom_errorbar(aes(ymin=lower.ci2, ymax=upper.ci2), 
-                size=1.3,
-                width = 1,
-                position = position_dodge(0.3),
-                colour = "purple")+
-  scale_y_continuous(sec.axis = sec_axis(~./max(eprStatsAll$Rate), 
-                                         name = "Hatching Frequency"))+
-  theme(legend.position = "none", 
-        axis.title.x = element_text(size = 20), 
-        axis.text.x = element_text(size = 20),
-        axis.title.y = element_text(size = 20),
-        axis.text.y = element_text(size = 20))
-
-epr.bar.graphs
-
-epr.bar.graphs+
-  facet_wrap(~Treatment)+
-  theme(
-    strip.text.x = element_blank()#remove white strips with labelling
-  )
-
-
-#### separate bar graphs for each treatment
-
-## AA
-epr.bar.graphs.AA <- ggplot(data = eprSumAA, aes(Generation, Rate, fill = factor(Treatment)))+
-  geom_bar(stat = "identity", 
-           position = position_dodge(), 
-           size =4,
-           width = 1.8)+
-  geom_errorbar(aes(ymin=Rate-ci, 
-                    ymax=Rate+ci), 
-                size=1.3, 
-                position = position_dodge())+
-  theme(legend.title = element_text(colour = "black", size=12))+
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank())+
-  scale_fill_manual(values = c("blue"))+
-  theme_classic()+
-  labs(y=expression(Egg~Production~Rate~(female^-1~day^-1)), 
-       x="Generation")+
-  scale_x_continuous(breaks = c(0,3,6,9,12,15,25))+
-  geom_line(aes(y=HF), 
-            size=1.3,
-            colour="purple")+
-  geom_errorbar(aes(ymin=HF-ci2, ymax=HF+ci2), 
-                size=1.3, 
-                position = position_dodge(0.3),
-                colour = "purple")+
-  scale_y_continuous(sec.axis = sec_axis(~./max(eprStatsAll$Rate), 
-                                         name = "Hatching Frequency"))+
-  theme(legend.position = "none", 
-        axis.title.x = element_text(size = 20), 
-        axis.text.x = element_text(size = 20),
-        axis.title.y = element_text(size = 20),
-        axis.text.y = element_text(size = 20))
-
-
-epr.bar.graphs.AA
-
-## AH
-epr.bar.graphs.AH <- ggplot(data = eprSumAH, aes(Generation, Rate, fill = factor(Treatment)))+
-  geom_bar(stat = "identity", 
-           position = position_dodge(), 
-           size =4,
-           width = 1.8)+
-  geom_errorbar(aes(ymin=Rate-ci, 
-                    ymax=Rate+ci), 
-                size=1.3, 
-                position = position_dodge())+
-  theme(legend.title = element_text(colour = "black", size=12))+
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank())+
-  scale_fill_manual(values = c("forestgreen"))+
-  theme_classic()+
-  labs(y=expression(Egg~Production~Rate~(female^-1~day^-1)), 
-       x="Generation")+
-  scale_x_continuous(breaks = c(0,3,6,9,12,15,25))+
-  geom_line(aes(y=HF), 
-            size=1.3,
-            colour="purple")+
-  geom_errorbar(aes(ymin=HF-ci2, ymax=HF+ci2), 
-                size=1.3, 
-                position = position_dodge(0.3),
-                colour = "purple")+
-  scale_y_continuous(sec.axis = sec_axis(~./max(eprStatsAll$Rate), 
-                                         name = "Hatching Frequency"))+
-  theme(legend.position = "none", 
-        axis.title.x = element_text(size = 20), 
-        axis.text.x = element_text(size = 20),
-        axis.title.y = element_text(size = 20),
-        axis.text.y = element_text(size = 20))
-
-
-epr.bar.graphs.AH
-
-
-## HA
-epr.bar.graphs.HA <- ggplot(data = eprSumHA, aes(Generation, Rate, fill = factor(Treatment)))+
-  geom_bar(stat = "identity", 
-           position = position_dodge(), 
-           size =4,
-           width = 1.8)+
-  geom_errorbar(aes(ymin=Rate-ci, 
-                    ymax=Rate+ci), 
-                size=1.3, 
-                position = position_dodge())+
-  theme(legend.title = element_text(colour = "black", size=12))+
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank())+
-  scale_fill_manual(values = c("orange"))+
-  theme_classic()+
-  labs(y=expression(Egg~Production~Rate~(female^-1~day^-1)), 
-       x="Generation")+
-  scale_x_continuous(breaks = c(0,3,6,9,12,15,25))+
-  geom_line(aes(y=HF), 
-            size=1.3,
-            colour="purple")+
-  geom_errorbar(aes(ymin=HF-ci2, ymax=HF+ci2), 
-                size=1.3, 
-                position = position_dodge(0.3),
-                colour = "purple")+
-  scale_y_continuous(sec.axis = sec_axis(~./max(eprStatsAll$Rate), 
-                                         name = "Hatching Frequency"))+
-  theme(legend.position = "none", 
-        axis.title.x = element_text(size = 20), 
-        axis.text.x = element_text(size = 20),
-        axis.title.y = element_text(size = 20),
-        axis.text.y = element_text(size = 20))
-
-
-epr.bar.graphs.HA
-
-## HH
-epr.bar.graphs.HH <- ggplot(data = eprSumHH, aes(Generation, Rate, fill = factor(Treatment)))+
-  geom_bar(stat = "identity", 
-           position = position_dodge(), 
-           size =4,
-           width = 1.8)+
-  geom_errorbar(aes(ymin=Rate-ci, 
-                    ymax=Rate+ci), 
-                size=1.3, 
-                position = position_dodge())+
-  theme(legend.title = element_text(colour = "black", size=12))+
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank())+
-  scale_fill_manual(values = c("red"))+
-  theme_classic()+
-  labs(y=expression(Egg~Production~Rate~(female^-1~day^-1)), 
-       x="Generation")+
-  scale_x_continuous(breaks = c(0,3,6,9,12,15,25))+
-  geom_line(aes(y=HF), 
-            size=1.3,
-            colour="purple")+
-  geom_errorbar(aes(ymin=HF-ci2, ymax=HF+ci2), 
-                size=1.3, 
-                position = position_dodge(0.3),
-                colour = "purple")+
-  scale_y_continuous(sec.axis = sec_axis(~./max(eprStatsAll$Rate), 
-                                         name = "Hatching Frequency"))+
-  theme(legend.position = "none", 
-        axis.title.x = element_text(size = 20), 
-        axis.text.x = element_text(size = 20),
-        axis.title.y = element_text(size = 20),
-        axis.text.y = element_text(size = 20))
-
-
-epr.bar.graphs.HH
-
-
-
-
-eprPlotTotal <- ggplot(data = eprStatsAll, aes(Generation, EPRtot, color=factor(Treatment)))+
-  geom_line(size=1)+
-  geom_errorbar(aes(ymin=EPRtot-ci, ymax=EPRtot+ci), size=1, width=1)+
-  theme(legend.title = element_text(colour = "black", size=12))+
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
-  scale_color_manual(values = c("blue", "forestgreen", "orange", "red"))+
-  theme_classic()+
-  labs(y=expression(Egg~Production~Rate~(female^-1~day^-1)), x="Generation")+
-  scale_x_continuous(breaks = c(0,2,4))+
-  scale_y_continuous(breaks = waiver(), minor_breaks = waiver())+
-  theme(legend.position = "none", 
-        axis.title.x = element_text(size = 20), 
-        axis.text.x = element_text(size = 20),
-        axis.title.y = element_text(size = 20),
-        axis.text.y = element_text(size = 20))
-
-eprPlotTotal
-
-hfPlotTotal <- ggplot(data = hfStatsAll, aes(Generation2, HF, color=factor(Treatment2)))+
-  geom_line(size=1)+
-  geom_errorbar(aes(ymin=HF-ci2, ymax=HF+ci2), size=1, width=1)+
-  theme(legend.title = element_text(colour = "black", size=12))+
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
-  scale_color_manual(values = c("blue", "forestgreen", "orange", "red"))+
-  theme_classic()+
-  labs(y="Hatching Frequency", x="Generation")+
-  scale_x_continuous(breaks = c(0,2,4))+
-  scale_y_continuous(breaks = waiver(), minor_breaks = waiver())+
-  theme(legend.position = "none", 
-        axis.title.x = element_text(size = 20), 
-        axis.text.x = element_text(size = 20),
-        axis.title.y = element_text(size = 20),
-        axis.text.y = element_text(size = 20))
-
-
-hfPlotTotal 
 
 ######################################################################################################################################
 #################################################################################################################################################
@@ -1705,12 +1944,10 @@ lambda.results <- as.data.frame(lambda.results)
 
 # create continuous generation vector for anova and plotting
 lambda.results$Generation.c <- as.numeric(as.character(lambda.results$Generation)) 
-
-
 lambda.results$Generation <- as.factor(as.numeric(lambda.results$Generation))
 lambda.results$Treatment <- as.factor(lambda.results$Treatment)
 lambda.results$Rep.c <- as.numeric(lambda.results$Rep)
-lambda.results$Rep.c <- as.factor(as.numeric(lambda.results$Rep.c))
+lambda.results$Rep <- as.factor(as.numeric(lambda.results$Rep.c))
 
 # check to see what the distribution looks like
 hist(lambda.results$lambda, freq = F)
@@ -1719,7 +1956,12 @@ lambda.ls <- split(lambda.results, f = lambda.results$Treatment)
 
 lambda.hist <- lapply(lambda.ls, function (x) hist(x$lambda))
 
+AM.hist <- lambda.hist$`1`
+OA.hist <- lambda.hist$`2`
+OW.hist <- lambda.hist$`3`
+OWA.hist <- lambda.hist$`4`
 
+# save each as 3.5 in x 4.4 in when selecting portrait
 
 
 # s() indicates a smooth function
@@ -1816,21 +2058,67 @@ lambdaPlotTotal <- ggplot(data = lambda.mean.c, aes(Generation.c, mean, color=fa
   geom_errorbar(aes(ymin=lower.ci, ymax=upper.ci), size=0.3, width=0, position = position_dodge(width = 2))+
   theme(legend.title = element_text(colour = "black", size=12))+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
-  scale_color_manual(values = c("blue", "forestgreen", "orange", "red"))+
+  scale_color_manual(values = c("#0c7bdc", #AM
+                                  "#009e73", #OA
+                                  "#ffa500", #OW
+                                  "#d55e00" #OWA
+  ))+
   theme_classic()+
-  labs(y="Population Fitness (??)", x="Generation")+
+  labs(y=expression(Population~Fitness~(lambda)), x="Generation")+
   scale_x_continuous(breaks = c(0,3,6,9,12,15,25))+
-  scale_y_continuous(breaks = waiver(), minor_breaks = waiver())+
-  #ylim(1.402, 1.405)+
+  scale_y_continuous(limits = c(0.38,1.3),
+                     breaks = c(0.4,0.5,0.6,0.7,0.8,0.9,1,1.1,1.2))+
   theme(legend.position = "none", 
-        axis.title.x = element_text(size = 20), 
-        axis.text.x = element_text(size = 20),
-        axis.title.y = element_text(size = 20),
-        axis.text.y = element_text(size = 20))
+        axis.title.x = element_text(size = 12), 
+        axis.text.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 12))
 
 lambdaPlotTotal
 
+ggsave(filename = paste0(fit.directory,"Lambda_plot.pdf"), plot = lambdaPlotTotal, height = 101, width = 180, units = "mm")
 
+
+lambda.mean.c$Generation <- as.factor(as.numeric(lambda.mean.c$Generation.c))
+lambdaBoxplot <- ggplot()+
+  geom_boxplot(data = lambda.results, aes(x = Generation, y = lambda, fill = factor(Treatment)), lwd = 1.1,
+               alpha = 0.3,
+               outlier.size = 1.5)+ # can't make a continuous x axis with boxplots
+  
+  geom_point(data = lambda.mean.c, aes(Generation, mean, color=factor(Treatment)),
+             size = 3, 
+             shape = 18,
+             position = position_dodge(width = 0.75)
+  ) +
+  
+  
+  
+  
+  scale_fill_manual(values = c("#0c7bdc", #AM
+                               "#009e73", #OA
+                               "#ffa500", #OW
+                               "#d55e00" #OWA
+  ))+
+  scale_color_manual(values = c("#0c7bdc", #AM
+                                "#009e73", #OA
+                                "#ffa500", #OW
+                                "#d55e00" #OWA
+  )
+  )+
+  theme_classic()+
+  labs(y=expression(Population~Fitness~(lambda)), x="Generation")+
+  scale_x_discrete(breaks = c(0,3,6,9,12,15,25))+
+  #scale_y_continuous(limits = c(0,1))+
+  theme(legend.position = "none", 
+        axis.title.x = element_text(size = 12), 
+        axis.text.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 12))
+
+
+lambdaBoxplot
+
+ggsave(filename = paste0(fit.directory,"Lambda_boxplot.pdf"), plot = lambdaBoxplot, height = 101, width = 180, units = "mm")
 ##### Fitness landscape plots #####
 
 lambda.results.0.full <- filter(lambda.results, Generation == 0)
