@@ -9,6 +9,6 @@ The Script titled: "Phenotypic_analysis_all_traits.R" is used to analyze all lif
 
 The Script titled: "A_tonsa_physical_data.R" is used to analyze all temperature, pH, pCO2, alkalinity, and accompanying carbonate chemistry data collected during the transgenerational experiment. The resulting data is summarized in the MS Excel workbook titled "A_tonsa_physical_data_complete_MS.xls" file. Included, you will find all the collected temperature and pH measurements, as well as all calculated values of pCO2, alkalinity, omega CA, omega AR, fCO2, and DIC. There is also all the statisically evaluated temperature and pH contrast results.
 
-The script used to evaluate genetic (nucleotide) diversity is titled "genetic_diversity.md". It includes sections of bash script for bioinformatic analysis and subsequent R code for analysis of nucleotide diversity.
+The script used to evaluate genetic (nucleotide) diversity is titled "genetic_diversity.md". It includes sections of bash script for bioinformatic analysis and subsequent R code for analysis of nucleotide diversity. Accompanying sequence data is located at https://www.ncbi.nlm.nih.gov/bioproject/PRJNA590963.
 
 Thank you for expressing interest in our research! For an easy to understand video that explains more about our research, check out: https://youtu.be/YrI2188-ejM
