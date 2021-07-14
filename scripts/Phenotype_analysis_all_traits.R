@@ -303,10 +303,10 @@ last.gen <- max(SurvTot.agg$Generation.c)
 SurvTot.agg.last <- filter(SurvTot.agg, Generation == last.gen)
 SurvTot.agg.0.last <- rbind(SurvTot.agg.0, SurvTot.agg.last)
 
-SurvTot.agg.0.last$Treatment2 <- case_when(SurvTot.agg.0.last$Treatment == 1 ~ "Ambient",
-                                           SurvTot.agg.0.last$Treatment == 2 ~ "Acidification",
-                                           SurvTot.agg.0.last$Treatment == 3 ~ "Warming",
-                                           SurvTot.agg.0.last$Treatment == 4 ~ "Greenhouse")
+SurvTot.agg.0.last$Treatment2 <- case_when(SurvTot.agg.0.last$Treatment == 1 ~ "AM",
+                                           SurvTot.agg.0.last$Treatment == 2 ~ "OA",
+                                           SurvTot.agg.0.last$Treatment == 3 ~ "OW",
+                                           SurvTot.agg.0.last$Treatment == 4 ~ "OWA")
 
 # change the order of the factor to be in the order you want. Help from: https://stackoverflow.com/questions/5490638/how-to-change-the-order-of-facet-labels-in-ggplot-custom-facet-wrap-labels
 SurvTot.agg.0.last <- within(SurvTot.agg.0.last, 
@@ -314,10 +314,10 @@ SurvTot.agg.0.last <- within(SurvTot.agg.0.last,
                                                   
                                                   # put the specific levels in the order you want
                                                   
-                                                  levels = c("Ambient", # 1
-                                                             "Acidification", # 2
-                                                             "Warming", # 3
-                                                             "Greenhouse") # 4 
+                                                  levels = c("AM", # 1
+                                                             "OA", # 2
+                                                             "OW", # 3
+                                                             "OWA") # 4 
                                                   
                              ))
 
@@ -1937,7 +1937,7 @@ lambda.results <- lambda.results %>%
   filter(unique != "9_3")
 
 
-lambda.results <- fread(paste(fit.directory,"lambda_results_devtime.txt", sep = ""))
+lambda.results <- fread(paste(fit.directory,"lambda_results_devtime_surv_epr_hf_sex_standardized_relative.txt", sep = ""))
 
 lambda.results <- as.data.frame(lambda.results)
 
@@ -2121,16 +2121,19 @@ lambdaBoxplot
 ggsave(filename = paste0(fit.directory,"Lambda_boxplot.pdf"), plot = lambdaBoxplot, height = 101, width = 180, units = "mm")
 ##### Fitness landscape plots #####
 
+
+
 lambda.results.0.full <- filter(lambda.results, Generation == 0)
+last.gen <- max(lambda.results$Generation.c)
 lambda.results.last.full <- filter(lambda.results, Generation == last.gen)
 lambda.results.0.last.full <- rbind(lambda.results.0.full, lambda.results.last.full)
 
 
 
-lambda.results.0.last.full$Treatment2 <- case_when(lambda.results.0.last.full$Treatment == 1 ~ "Ambient",
-                                                   lambda.results.0.last.full$Treatment == 2 ~ "Acidification",
-                                                   lambda.results.0.last.full$Treatment == 3 ~ "Warming",
-                                                   lambda.results.0.last.full$Treatment == 4 ~ "Greenhouse")
+lambda.results.0.last.full$Treatment2 <- case_when(lambda.results.0.last.full$Treatment == 1 ~ "AM",
+                                                   lambda.results.0.last.full$Treatment == 2 ~ "OA",
+                                                   lambda.results.0.last.full$Treatment == 3 ~ "OW",
+                                                   lambda.results.0.last.full$Treatment == 4 ~ "OWA")
 
 
 # change the order of the factor to be in the order you want. Help from: https://stackoverflow.com/questions/5490638/how-to-change-the-order-of-facet-labels-in-ggplot-custom-facet-wrap-labels
@@ -2139,10 +2142,10 @@ lambda.results.0.last.full <- within(lambda.results.0.last.full,
                                                           
                                                           # put the specific levels in the order you want
                                                           
-                                                          levels = c("Ambient", # 1
-                                                                     "Acidification", # 2
-                                                                     "Warming", # 3
-                                                                     "Greenhouse") # 4 
+                                                          levels = c("AM", # 1
+                                                                     "OA", # 2
+                                                                     "OW", # 3
+                                                                     "OWA") # 4 
                                                           
                                      ))
 
@@ -2153,7 +2156,7 @@ lambda.results.0.last.full <- within(lambda.results.0.last.full,
 ## Panels are wrapped by Treatment
 x.pos <- 0.25
 
-ggplot()+
+surv.landscape <- ggplot()+
   geom_density(data = SurvTot.agg.0.last, aes(x=lx, 
                                               y=after_stat(count),
                                               group = Generation,
@@ -2228,21 +2231,26 @@ geom_smooth(data = lambda.results.0.last.full, aes(x = surv, y = lambda.rel*10, 
 
 EPRtot.0 <- filter(EPRtot, Generation == 0)
 
-last.gen <- max(lambda.results$Generation)
+
 
 EPRtot.last <- filter(EPRtot, Generation == last.gen)
 
 EPRtot.0.last <- rbind(EPRtot.0, EPRtot.last)
 
+EPRtot.0.last <- EPRtot.0.last %>% 
+  mutate(Treatment2 <- case_when(Treatment == "AA" ~ "AM",
+                                 Treatment == "AH" ~ "OA",
+                                 Treatment == "HA" ~ "OW",
+                                 Treatment == "HH" ~ "OWA"))
 
-EPRtot.0.last$Treatment[EPRtot.0.last$Treatment=="AA"] <- 1
-EPRtot.0.last$Treatment[EPRtot.0.last$Treatment=="AH"] <- 2
-EPRtot.0.last$Treatment[EPRtot.0.last$Treatment=="HA"] <- 3
-EPRtot.0.last$Treatment[EPRtot.0.last$Treatment=="HH"] <- 4
+#EPRtot.0.last$Treatment[EPRtot.0.last$Treatment=="AA"] <- 1
+#EPRtot.0.last$Treatment[EPRtot.0.last$Treatment=="AH"] <- 2
+#EPRtot.0.last$Treatment[EPRtot.0.last$Treatment=="HA"] <- 3
+#EPRtot.0.last$Treatment[EPRtot.0.last$Treatment=="HH"] <- 4
 
 
 
-ggplot()+
+epr.landscape <- ggplot()+
   geom_density(data = lambda.results.0.last.full, aes(x=epr, 
                                                       y=after_stat(count),
                                                       group = factor(Generation), 
@@ -2323,7 +2331,7 @@ geom_smooth(data = lambda.results.0.last.full, aes(x = epr, y = lambda.rel, colo
 ##### HF fitness landscape #####
 
 
-ggplot()+
+hf.landscape <- ggplot()+
   geom_density(data = lambda.results.0.last.full, aes(x=hf, 
                                                       y=after_stat(count)/25,
                                                       group = factor(Generation), 
@@ -2404,3 +2412,4 @@ geom_smooth(data = lambda.results.0.last.full, aes(x = hf, y = lambda.rel*20, co
 
 ### SAVE THE HF FIGURE AS 6.6 x 16 INCHES #########################################################################################################
 
+fit.landscapes <- ggarrange(surv.landscape,epr.landscape,hf.landscape, common.legend = T, ncol = 1)
