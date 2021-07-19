@@ -296,7 +296,7 @@ ggsave(filename = paste0(surv.directory,"Surv_boxplot.pdf"), plot = survBoxplot,
 
 ## Create dataframes for fitness landscapes
 
-SurvTot.agg.0 <- filter(SurvTot.agg, Generation == 0)
+SurvTot.agg.0 <- filter(SurvTot.agg, Generation.c == 0)
 
 last.gen <- max(SurvTot.agg$Generation.c)
 
@@ -2211,18 +2211,20 @@ geom_smooth(data = lambda.results.0.last.full, aes(x = surv, y = lambda.rel*10, 
   
   scale_y_continuous(sec.axis = dup_axis(trans = ~./10, 
                                          name = expression(Relative~Fitness)))+
-  theme(axis.text = element_text(size = 24),
-        axis.title = element_text(size = 24),
-        strip.text.x = element_text(size = 24),
-        strip.text.y = element_blank(),
-        legend.position = "bottom",
+  theme(axis.text = element_text(size = 9),
+        axis.title = element_text(size = 9),
+        strip.text.x = element_text(size = 9),
+        legend.position = "none",
         legend.text.align = 0,
         legend.title = element_blank(),
-        legend.text = element_text(size = 20))+
+        legend.text = element_text(size = 9))+
   
   facet_wrap(~Treatment2)
 
 
+surv.landscape
+
+ggsave(filename = paste0(surv.directory,"Surv_fit_landscape.pdf"), plot = surv.landscape, height = 70, width = 180, units = "mm")
 ### SAVE AS 6.6 X 16 ############################################################################################
 
 
@@ -2317,17 +2319,19 @@ geom_smooth(data = lambda.results.0.last.full, aes(x = epr, y = lambda.rel, colo
                      sec.axis = dup_axis(trans = ~./10, # keep this as multiplied when just using the points and no landscape with scale = 25 for density or 0.6666665 for count
                                          
                                          name = expression(Relative~Fitness)))+
-  theme(axis.text = element_text(size = 24),
-        axis.title = element_text(size = 24),
-        strip.text.x = element_text(size = 24),
+  theme(axis.text = element_text(size = 9),
+        axis.title = element_text(size = 9),
+        strip.text.x = element_text(size = 9),
         strip.text.y = element_blank(),
-        legend.position = "bottom",
+        legend.position = "none",
         legend.text.align = 0,
         legend.title = element_blank(),
-        legend.text = element_text(size = 20))+
+        legend.text = element_text(size = 9))+
   facet_wrap(~Treatment2)
 
+epr.landscape
 
+ggsave(filename = paste0(epr.directory,"EPR_fit_landscape.pdf"), plot = epr.landscape, height = 70, width = 180, units = "mm")
 ##### HF fitness landscape #####
 
 
@@ -2400,16 +2404,22 @@ geom_smooth(data = lambda.results.0.last.full, aes(x = hf, y = lambda.rel*20, co
                                          name = "Relative Fitness"))+
   
   
-  theme(axis.text = element_text(size = 24),
-        axis.title = element_text(size = 24),
-        strip.text.x = element_text(size = 24),
+  theme(axis.text = element_text(size = 9),
+        axis.title = element_text(size = 9),
+        strip.text.x = element_text(size = 9),
         strip.text.y = element_blank(),
-        legend.position = "bottom",
+        legend.position = "none",
         legend.text.align = 0,
-        legend.text = element_text(size = 20),
+        legend.text = element_text(size = 9),
         legend.title = element_blank())+
   facet_wrap(~Treatment2)#+ylim(0,1000)
 
+hf.landscape
+
+
+
 ### SAVE THE HF FIGURE AS 6.6 x 16 INCHES #########################################################################################################
 
-fit.landscapes <- ggarrange(surv.landscape,epr.landscape,hf.landscape, common.legend = T, ncol = 1)
+fit.landscapes <- ggarrange(hf.landscape,epr.landscape,surv.landscape, common.legend = T, ncol = 1)
+
+ggsave(filename = paste0(fit.directory,"Fitness_landscapes_complete.pdf"), plot = fit.landscapes, height = 210, width = 180, units = "mm")
